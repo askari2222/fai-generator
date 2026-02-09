@@ -73,13 +73,33 @@ def load_font(size):
 # --------------------------------------------------
 # Image optimization
 # --------------------------------------------------
-def optimize_image(img, max_size=1920, quality=85):
-    img = ImageOps.exif_transpose(img)
+# def optimize_image(img, max_size=1920, quality=85):
+#     img = ImageOps.exif_transpose(img)
+#     w, h = img.size
+#     long_edge = max(w, h)
+#     if long_edge > max_size:
+#         scale = max_size / long_edge
+#         img = img.resize((int(w*scale), int(h*scale)), Image.Resampling.LANCZOS)
+#     return img.convert("RGB"), quality
+
+def optimize_image(img, max_size=3000, quality=95):
+    """
+    Preserve clarity for text-heavy photos.
+    Minimal resizing, no forced orientation change.
+    """
+    img = ImageOps.exif_transpose(img)  # orientation-safe
+
     w, h = img.size
     long_edge = max(w, h)
+
+    # Only resize if image is REALLY huge
     if long_edge > max_size:
         scale = max_size / long_edge
-        img = img.resize((int(w*scale), int(h*scale)), Image.Resampling.LANCZOS)
+        img = img.resize(
+            (int(w * scale), int(h * scale)),
+            Image.Resampling.LANCZOS
+        )
+
     return img.convert("RGB"), quality
 
 # --------------------------------------------------
@@ -88,8 +108,8 @@ def optimize_image(img, max_size=1920, quality=85):
 def render_image(img, label):
     img = img.copy()
     draw = ImageDraw.Draw(img)
-    label_font = load_font(28)
-    footer_font = load_font(18)
+    label_font = load_font(32)
+    footer_font = load_font(20)
 
     padding = 20
     footer_gap = 10
@@ -227,8 +247,9 @@ if st.button("📄 Convert to PDF"):
 
     # SAVE PDF
     buffer = io.BytesIO()
-    pdf_pages[0].save(buffer, format="PDF", save_all=True, append_images=pdf_pages[1:], resolution=200, optimize=True)
+    pdf_pages[0].save(buffer, format="PDF", save_all=True, append_images=pdf_pages[1:], resolution=300, optimize=True)
     buffer.seek(0)
 
     st.success("PDF created successfully!")
     st.download_button("⬇️ Download PDF", data=buffer, file_name="NED_FAI_Report.pdf", mime="application/pdf")
+
